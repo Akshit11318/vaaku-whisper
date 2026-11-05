@@ -207,6 +207,29 @@ def _manifest_row(row: dict) -> dict:
     )
 
 
+def _fit_mel_length(module, features):
+    """Pad or trim a batch to the length Whisper's encoder requires.
+
+    Short FLEURS clips produce fewer than 3000 frames. The encoder checks
+    that length exactly, so padding happens per batch rather than in the
+    stored features.
+    """
+    import torch
+
+    encoder = module.get_encoder() if hasattr(module, "get_encoder") else None
+    if encoder is None or not hasattr(encoder, "conv1"):
+        return features
+    expected = (
+        encoder.config.max_source_positions * encoder.conv1.stride[0] * encoder.conv2.stride[0]
+    )
+    width = features.shape[-1]
+    if width == expected:
+        return features
+    if width > expected:
+        return features[..., :expected]
+    return torch.nn.functional.pad(features, (0, expected - width))
+
+
 def _collate(rows: list[dict]) -> dict:
     return {
         "input_features": pad_mel_features([row["input_features"] for row in rows]),
@@ -224,6 +247,7 @@ def _forward(model, batch: dict, device, precision: str):
     # LoRA layers are already inside the base module. Calling the PEFT wrapper
     # forwards a default input_ids that current Whisper rejects.
     module = model.get_base_model() if hasattr(model, "get_base_model") else model
+    features = _fit_mel_length(module, features)
     with torch.autocast(device_type=device.type, dtype=dtype or torch.float32, enabled=enabled):
         outputs = module(input_features=features, labels=labels)
     if outputs.loss is None:
