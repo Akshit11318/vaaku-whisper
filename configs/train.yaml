@@ -1,0 +1,37 @@
+purpose: experiment
+run_name: vaakku-whisper-small
+seed: 42
+output_dir: ${VAAKKU_ARTIFACT_DIR:-artifacts}/runs
+base_model_id: openai/whisper-small
+model_init: pretrained
+languages: [ta, te, hi, kn, ml]
+train_manifest: ${VAAKKU_DATA_DIR:-data/prepared}/train.jsonl
+validation_manifest: ${VAAKKU_DATA_DIR:-data/prepared}/validation.jsonl
+num_epochs: 3
+max_steps: null
+per_device_train_batch_size: 4
+per_device_eval_batch_size: 2
+gradient_accumulation_steps: 4
+learning_rate: 0.0001
+weight_decay: 0.01
+warmup_steps: 100
+max_grad_norm: 1.0
+precision: auto
+gradient_checkpointing: true
+num_workers: 0
+max_audio_seconds: 30
+sample_rate: 16000
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: [q_proj, v_proj]
+  bias: none
+eval_steps: 200
+save_steps: 200
+early_stopping_patience: 3
+early_stopping_min_delta: 0.001
+selection_metric: eval_loss
+logging:
+  level: INFO
+  dir: ${VAAKKU_ARTIFACT_DIR:-artifacts}/logs

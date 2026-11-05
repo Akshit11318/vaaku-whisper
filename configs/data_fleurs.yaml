@@ -1,0 +1,19 @@
+seed: 42
+output_dir: ${VAAKKU_DATA_DIR:-/home/ubuntu/vaaku/data}/prepared
+sample_rate: 16000
+min_duration_s: 0.5
+max_duration_s: 30
+languages: [ta, te, hi, kn, ml]
+speaker_disjoint: true
+splits:
+  train: 0.9
+  validation: 0.05
+  test: 0.05
+sources:
+  - name: fleurs
+    kind: fleurs
+    enabled: true
+    path: ${VAAKKU_DATA_DIR:-/home/ubuntu/vaaku/data}/raw/fleurs
+logging:
+  level: INFO
+  dir: ${VAAKKU_ARTIFACT_DIR:-/home/ubuntu/vaaku/artifacts}/logs

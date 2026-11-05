@@ -235,6 +235,7 @@ class PublishConfig(BaseModel):
     mode: Literal["peft_adapter", "merged"] = "peft_adapter"
     run_dir: str
     checkpoint: str = "best"
+    eval_results: str | None = None
     license: str
     datasets: list[DatasetRecord]
     private: bool = False
@@ -263,8 +264,9 @@ def _validate_languages(value: list[str]) -> list[str]:
         raise ValueError("languages cannot be empty")
     unknown = [lang for lang in value if lang not in SUPPORTED_LANGUAGES]
     if unknown:
-        raise ValueError(f"Unsupported languages: {unknown}. Supported: {list(SUPPORTED_LANGUAGES)}")
+        raise ValueError(
+            f"Unsupported languages: {unknown}. Supported: {list(SUPPORTED_LANGUAGES)}"
+        )
     if len(set(value)) != len(value):
         raise ValueError("languages contains duplicates")
     return value
-

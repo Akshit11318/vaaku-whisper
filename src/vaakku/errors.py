@@ -29,3 +29,7 @@ class PublishError(VaakkuError):
 
 class InferenceError(VaakkuError):
     """A single transcription request failed."""
+
+
+class ModelNotReady(InferenceError):
+    """The process is up, but no model is loaded."""

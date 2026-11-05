@@ -1,0 +1,16 @@
+repo_id: rudra11/vaakku-whisper-small
+token_env: HF_TOKEN
+mode: peft_adapter
+run_dir: ${VAAKKU_ARTIFACT_DIR:-artifacts}/runs/REPLACE_WITH_RUN_ID
+checkpoint: best
+eval_results: ${VAAKKU_ARTIFACT_DIR:-artifacts}/eval/REPLACE_WITH_EVAL/results.json
+license: REPLACE_WITH_CONFIRMED_LICENSE
+private: false
+datasets:
+  - name: google/fleurs
+    url: https://huggingface.co/datasets/google/fleurs
+    license: CC-BY-4.0
+    split_method: official train, validation, and test
+logging:
+  level: INFO
+  dir: ${VAAKKU_ARTIFACT_DIR:-artifacts}/logs

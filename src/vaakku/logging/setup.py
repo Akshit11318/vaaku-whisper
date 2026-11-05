@@ -97,7 +97,9 @@ def setup_logging(
     return logger
 
 
-def log_event(logger: logging.Logger, message: str, level: int = logging.INFO, **fields: Any) -> None:
+def log_event(
+    logger: logging.Logger, message: str, level: int = logging.INFO, **fields: Any
+) -> None:
     logger.log(level, message, extra={"fields": fields})
 
 

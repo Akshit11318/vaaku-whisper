@@ -1,0 +1,14 @@
+test_manifest: ${VAAKKU_DATA_DIR:-data/prepared}/test.jsonl
+expect_split: test
+output_dir: ${VAAKKU_ARTIFACT_DIR:-artifacts}/eval
+model_path: null
+base_model_id: openai/whisper-small
+compare_base: false
+languages: [ta, te, hi, kn, ml]
+max_new_tokens: 225
+num_beams: 1
+device: auto
+batch_size: 1
+logging:
+  level: INFO
+  dir: ${VAAKKU_ARTIFACT_DIR:-artifacts}/logs
