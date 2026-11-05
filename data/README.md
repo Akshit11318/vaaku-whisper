@@ -1,20 +1,24 @@
 # Data location
 
-Raw audio, prepared manifests, and dataset caches do not belong in git.
+Audio does not go in git. Experiment 1 has not downloaded anything yet. The dataset choice and the licenses are in the [README](../README.md).
 
-On the training instance the 233 GiB instance-store disk is mounted at `/home/ubuntu/vaaku`. Put datasets here:
+On the training instance, put files on the instance-store mount:
 
 | Path | Use |
 |---|---|
-| `/home/ubuntu/vaaku/data/raw` | Downloaded datasets |
-| `/home/ubuntu/vaaku/data/manifests` | Normalized JSONL manifests |
-| `/home/ubuntu/vaaku/data/prepared` | Train, validation, and test splits |
-| `/home/ubuntu/vaaku/artifacts` | Checkpoints, evaluation reports, logs |
-| `/home/ubuntu/vaaku/cache/huggingface` | Hugging Face hub and dataset cache |
+| `/home/ubuntu/vaaku/data/raw/fleurs` | `google/fleurs` for `hi_in`, `ta_in`, `te_in`, `kn_in`, `ml_in` |
+| `/home/ubuntu/vaaku/data/raw/common-voice` | Scripted 27.0 validated clips for Hindi, Tamil, Telugu, and Malayalam |
+| `/home/ubuntu/vaaku/data/raw/kathbath` | Kathbath for Tamil, Telugu, Hindi, Kannada, and Malayalam only |
+| `/home/ubuntu/vaaku/data/manifests` | Normalized JSONL, once a prepare script exists |
+| `/home/ubuntu/vaaku/data/prepared` | Train and validation manifests. FLEURS `test` stays separate |
+| `/home/ubuntu/vaaku/artifacts` | Checkpoints, evaluation, logs |
+| `/home/ubuntu/vaaku/cache/huggingface` | Hub and dataset cache |
 | `/home/ubuntu/vaaku/tmp` | Temporary files |
 
-The root volume is about 64 GiB. Training caches and checkpoints will fill it. The shell profile `/etc/profile.d/vaaku.sh` points `HF_HOME`, `HF_DATASETS_CACHE`, `PIP_CACHE_DIR`, and `TMPDIR` at the large disk.
+Do not download IndicVoices or the Vistaar benchmark packs for this experiment. Do not download the other seven Kathbath languages. Check `df -h /home/ubuntu/vaaku` first.
 
-That instance-store disk is wiped when the instance is **stopped** or **terminated**. A reboot keeps it. Copy anything you need to keep onto EBS or S3 before you stop the instance.
+`/etc/profile.d/vaaku.sh` points `HF_HOME`, `HF_DATASETS_CACHE`, `PIP_CACHE_DIR`, and `TMPDIR` at this disk so the 64 GiB root volume is not the cache.
 
-Source and license checks for IndicVoices, Kathbath, FLEURS, Vistaar, and Common Voice happen before any of those datasets are enabled for training. Nothing here is downloaded automatically.
+This disk is wiped when the instance stops or is terminated. A reboot keeps it.
+
+Common Voice files stay on this disk. The Common Voice terms forbid re-hosting them and forbid trying to identify speakers. FLEURS is CC-BY-4.0, so a future model card has to attribute it. Kathbath's card says the packaging is CC0 and the text comes from the IndicCorp crawl.
