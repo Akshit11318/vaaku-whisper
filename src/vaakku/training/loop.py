@@ -230,6 +230,14 @@ def _fit_mel_length(module, features):
     return torch.nn.functional.pad(features, (0, expected - width))
 
 
+def _fit_label_length(module, labels):
+    """Clip a label batch to Whisper's maximum decoder length."""
+    limit = getattr(getattr(module, "config", None), "max_target_positions", None)
+    if not isinstance(limit, int) or labels.shape[1] <= limit:
+        return labels
+    return labels[:, :limit]
+
+
 def _collate(rows: list[dict]) -> dict:
     return {
         "input_features": pad_mel_features([row["input_features"] for row in rows]),
@@ -248,6 +256,7 @@ def _forward(model, batch: dict, device, precision: str):
     # forwards a default input_ids that current Whisper rejects.
     module = model.get_base_model() if hasattr(model, "get_base_model") else model
     features = _fit_mel_length(module, features)
+    labels = _fit_label_length(module, labels)
     with torch.autocast(device_type=device.type, dtype=dtype or torch.float32, enabled=enabled):
         outputs = module(input_features=features, labels=labels)
     if outputs.loss is None:

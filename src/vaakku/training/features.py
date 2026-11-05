@@ -38,11 +38,11 @@ def rows_from_manifest(config: TrainConfig, split: str, processor) -> list[dict]
             language=WHISPER_LANGUAGE_NAMES[language],
             task="transcribe",
         )
-        labels = processor.tokenizer(row["transcription"]).input_ids
+        labels = truncate_label_ids(processor.tokenizer, row["transcription"])
         prepared.append(
             {
                 "input_features": features,
-                "labels": list(labels),
+                "labels": labels,
                 "duration_s": float(row["duration_s"]),
                 "language": language,
                 "sample_id": row.get("sample_id"),
@@ -51,6 +51,24 @@ def rows_from_manifest(config: TrainConfig, split: str, processor) -> list[dict]
     if not prepared:
         raise TrainingError(f"No usable rows in {path}")
     return prepared
+
+
+def truncate_label_ids(tokenizer, text: str) -> list[int]:
+    """Keep decoder targets inside Whisper's 448-token limit.
+
+    A few FLEURS sentences tokenize longer than `max_target_positions`.
+    The encoder run already succeeded; the decoder rejects those labels.
+    """
+    ids = list(tokenizer(text).input_ids)
+    limit = getattr(tokenizer, "model_max_length", 448)
+    if not isinstance(limit, int) or limit > 448 or limit < 1:
+        limit = 448
+    if len(ids) <= limit:
+        return ids
+    eos = getattr(tokenizer, "eos_token_id", None)
+    if eos is None:
+        return ids[:limit]
+    return ids[: limit - 1] + [eos]
 
 
 def extract_log_mel(feature_extractor, audio, sample_rate: int):
