@@ -32,7 +32,9 @@ def main() -> int:
         print(status.reason or "Model not configured", file=sys.stderr)
         return 2
     predictions = []
-    for row in load_test_rows(config):
+    rows = load_test_rows(config)
+    total = len(rows)
+    for index, row in enumerate(rows, start=1):
         payload = Path(row["audio_path"]).read_bytes()
         result = engine.transcribe(
             payload, suffix=Path(row["audio_path"]).suffix, language=row["language"]
@@ -46,6 +48,8 @@ def main() -> int:
                 "audio_duration_s": result.audio_duration_s,
             }
         )
+        if index == 1 or index % 100 == 0 or index == total:
+            print(f"scored {index}/{total}", flush=True)
     output = write_evaluation(config, predictions, gpu_memory_mb=None)
     print(output)
     return 0

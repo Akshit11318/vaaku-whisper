@@ -83,17 +83,15 @@ def load_engine_from_env() -> InferenceEngine:
         )
     device = _select_device(device_name, torch.cuda.is_available())
     source = model_path or model_id
-    try:
-        peft_config = PeftConfig.from_pretrained(source)
-        base_name = peft_config.base_model_name_or_path or base_model_id
-        base = WhisperForConditionalGeneration.from_pretrained(base_name)
+    peft_config = _peft_config(PeftConfig, source)
+    if peft_config is not None:
+        resolved_base = peft_config.base_model_name_or_path or base_model_id
+        base = WhisperForConditionalGeneration.from_pretrained(resolved_base)
         model = PeftModel.from_pretrained(base, source)
-        processor = WhisperProcessor.from_pretrained(source)
-        resolved_base = base_name
-    except Exception:
-        model = WhisperForConditionalGeneration.from_pretrained(source)
-        processor = WhisperProcessor.from_pretrained(source)
+    else:
         resolved_base = source
+        model = WhisperForConditionalGeneration.from_pretrained(source)
+    processor = _load_processor(WhisperProcessor, source, resolved_base)
     model.to(device)
     model.eval()
     revision = _revision(source)
@@ -131,10 +129,36 @@ def _generate(model, processor, audio, language: str | None, device: str) -> tup
                 detected = None
             if detected:
                 generate_kwargs["language"] = WHISPER_LANGUAGE_NAMES.get(detected, detected)
+    # This PEFT build rejects a positional feature tensor. The LoRA layers
+    # already live on the base module, so generation uses that module.
+    generator = model.get_base_model() if hasattr(model, "get_base_model") else model
     with torch.no_grad():
-        predicted = model.generate(features, **generate_kwargs)
+        predicted = generator.generate(features, **generate_kwargs)
     text = processor.tokenizer.batch_decode(predicted, skip_special_tokens=True)[0].strip()
     return text, detected if detected in SUPPORTED_LANGUAGES else None
+
+
+def _peft_config(peft_config_cls, source: str):
+    try:
+        return peft_config_cls.from_pretrained(source)
+    except Exception:
+        return None
+
+
+def _load_processor(processor_cls, source: str, base_model_id: str):
+    candidates = [source]
+    path = Path(source)
+    if path.exists():
+        candidates.append(str(path.parent.parent / "processor"))
+        candidates.append(str(path.parent / "processor"))
+    candidates.append(base_model_id)
+    last_error: Exception | None = None
+    for candidate in candidates:
+        try:
+            return processor_cls.from_pretrained(candidate)
+        except Exception as exc:
+            last_error = exc
+    raise InferenceError(f"Could not load the Whisper processor for {source}") from last_error
 
 
 def _language_from_detection(processor, detected_ids) -> str | None:
