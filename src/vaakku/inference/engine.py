@@ -42,13 +42,14 @@ class InferenceEngine:
         if duration > MAX_AUDIO_SECONDS:
             raise InferenceError(f"Audio is longer than {MAX_AUDIO_SECONDS:.0f} seconds.")
         with self._lock:
-            transcript, detected = _generate(
+            transcripts, detected = _generate(
                 self.model,
                 self.processor,
-                audio,
+                [audio],
                 language,
                 self._status.device or "cpu",
             )
+            transcript = transcripts[0]
         mode = "selected" if language else ("detected" if detected else "unavailable")
         return TranscriptResult(
             transcript=transcript,
@@ -60,6 +61,24 @@ class InferenceEngine:
             audio_duration_s=round(duration, 4),
             device=self._status.device,
         )
+
+    def transcribe_batch(self, audios: list, language: str) -> list[str]:
+        """Transcribe one language together so the GPU decodes many clips at once."""
+        if not audios:
+            return []
+        if not self._status.ready or self.model is None or self.processor is None:
+            raise ModelNotReady(self._status.reason or "Model not configured")
+        if language not in WHISPER_LANGUAGE_NAMES:
+            raise InferenceError(f"Unsupported language: {language}")
+        with self._lock:
+            transcripts, _detected = _generate(
+                self.model,
+                self.processor,
+                audios,
+                language,
+                self._status.device or "cpu",
+            )
+        return transcripts
 
 
 def load_engine_from_env() -> InferenceEngine:
@@ -110,16 +129,18 @@ def load_engine_from_env() -> InferenceEngine:
     )
 
 
-def _generate(model, processor, audio, language: str | None, device: str) -> tuple[str, str | None]:
+def _generate(
+    model, processor, audios: list, language: str | None, device: str
+) -> tuple[list[str], str | None]:
     import torch
 
-    inputs = processor.feature_extractor(audio, sampling_rate=16000, return_tensors="pt")
+    inputs = processor.feature_extractor(audios, sampling_rate=16000, return_tensors="pt")
     features = inputs.input_features.to(device)
     generate_kwargs = {"task": "transcribe"}
     detected = None
     if language:
         generate_kwargs["language"] = WHISPER_LANGUAGE_NAMES[language]
-    else:
+    elif len(audios) == 1:
         detect = getattr(model, "detect_language", None)
         if detect is not None:
             try:
@@ -132,10 +153,13 @@ def _generate(model, processor, audio, language: str | None, device: str) -> tup
     # This PEFT build rejects a positional feature tensor. The LoRA layers
     # already live on the base module, so generation uses that module.
     generator = model.get_base_model() if hasattr(model, "get_base_model") else model
-    with torch.no_grad():
+    with torch.inference_mode():
         predicted = generator.generate(features, **generate_kwargs)
-    text = processor.tokenizer.batch_decode(predicted, skip_special_tokens=True)[0].strip()
-    return text, detected if detected in SUPPORTED_LANGUAGES else None
+    texts = [
+        text.strip()
+        for text in processor.tokenizer.batch_decode(predicted, skip_special_tokens=True)
+    ]
+    return texts, detected if detected in SUPPORTED_LANGUAGES else None
 
 
 def _peft_config(peft_config_cls, source: str):
