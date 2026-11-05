@@ -1,0 +1,19 @@
+# Lower bounds, resolved on the machine that installs them.
+# Install a CUDA torch wheel before this file on the GPU box.
+# See docs/aws_training.md. Do not add the Hugging Face token here.
+
+pydantic>=2.7,<3
+PyYAML>=6.0,<7
+numpy>=1.26
+soundfile>=0.12
+scipy>=1.11
+jiwer>=3.0
+fastapi>=0.115
+uvicorn>=0.32
+python-multipart>=0.0.12
+huggingface_hub>=0.26
+transformers>=4.46
+peft>=0.13
+accelerate>=1.0
+datasets>=3.0
+streamlit>=1.40
