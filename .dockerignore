@@ -1,0 +1,14 @@
+.git
+.venv
+venv
+artifacts
+data/raw
+data/prepared
+logs
+**/__pycache__
+**/*.pyc
+.env
+*.pem
+tests
+docs
+.github

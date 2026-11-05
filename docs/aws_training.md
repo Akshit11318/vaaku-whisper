@@ -40,6 +40,20 @@ After a stop/start the instance store comes back empty. Run `scripts/setup_aws_b
 
 `nvidia-smi` should show an NVIDIA A10G and about 23028 MiB. Driver 580 reports CUDA 13.0. PyTorch wheels bring their own CUDA runtime; a separate CUDA toolkit install is not required for training.
 
-## What this guide does not do
+## Code and the virtualenv
 
-Later stages add dataset preparation, LoRA training, evaluation, and the explicit Hugging Face publish command. Those scripts are not launched by GitHub Actions, and this setup script does not start them.
+Put the git checkout on the root disk, for example `/home/ubuntu/vaaku-whisper`. Do not clone into `/home/ubuntu/vaaku`. A stop deletes that mount.
+
+The box already has a virtualenv at `/home/ubuntu/vaakku-venv`. Install this repo into that environment before preparation. Dataset caches stay on the instance store through `/etc/profile.d/vaaku.sh`.
+
+## What has not been started
+
+`scripts/prepare_data.py`, `scripts/train.py`, `scripts/evaluate.py`, and `scripts/publish_model.py` are in the repo. None of them has been run on the instance. GitHub Actions does not launch them, and `setup_aws_box.sh` does not start them.
+
+The first data command, after the archive sizes look right, is:
+
+```bash
+python scripts/prepare_data.py --config configs/data_fleurs.yaml
+```
+
+That unpacks FLEURS and writes manifests. It is not the training run. Training is a separate command, `python scripts/train.py --config configs/train.yaml`, and it has not been started.

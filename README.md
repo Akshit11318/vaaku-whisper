@@ -11,26 +11,24 @@ This is a fine-tuning and engineering project. It is not a claim of production a
 | Item | State |
 |---|---|
 | GPU box | `g5.xlarge` in `ap-south-1` is set up. NVIDIA driver 580.178.04 sees an A10G with 23028 MiB. `nouveau` was unbound and blacklisted. |
-| Data disk | Empty instance store, 233 GiB, mounted at `/home/ubuntu/vaaku`. About 217 GiB free after formatting. Root is 64 GiB and is not for datasets. |
-| Setup scripts | On `main`, commit `ec9f835`: `scripts/setup_aws_box.sh`, `scripts/verify_gpu.sh`. |
-| Datasets | Chosen below. **None have been downloaded.** |
-| Training, evaluation, publishing | Not built. No checkpoints. |
-| API, Vaakku Studio, Docker, CI | Not built. |
-| Config and logging package | On `feat/whisper-lora-experiment` only. Python syntax checks pass. It has not been imported, because `pydantic` is not installed in the local environment yet, and there is no training script calling it. |
+| Data disk | Instance store, 233 GiB, mounted at `/home/ubuntu/vaaku`. Root is 64 GiB. Code and the virtualenv stay on root. Datasets and checkpoints stay on the instance store. |
+| FLEURS download | The instance log says 31 of 31 files were saved to `/home/ubuntu/vaaku/data/raw/fleurs` on 2026-11-05 at 17:23 UTC. Confirm the `train.tar.gz` files are about a gigabyte each before preparation. |
+| Common Voice and Kathbath | Chosen below. Not downloaded. |
+| Training code | On `main`: data preparation, LoRA training, WER/CER evaluation, publish preflight, FastAPI, Vaakku Studio, Docker, and CI. |
+| Training run | Not started. No checkpoint. No measured WER or CER. |
+| Hugging Face publish | Not done. `configs/publish.yaml` still has placeholder paths and license text, so the publish script refuses it. |
 
-Stopping or terminating the instance deletes `/home/ubuntu/vaaku`. A reboot keeps it. Copy checkpoints to EBS or S3 before a stop. After a stop/start, run `bash scripts/setup_aws_box.sh` again.
+Stopping or terminating the instance deletes `/home/ubuntu/vaaku`, including the FLEURS download. A reboot keeps it. Copy checkpoints to EBS or S3 before a stop. After a stop/start, run `bash scripts/setup_aws_box.sh` again and download FLEURS again.
 
 ## Branches
 
-`main` stays the box setup that has already been run.
-
-New experiments go on `feat/` branches. The first one is `feat/whisper-lora-experiment`. Do not train from uncommitted files, and do not put experiment code directly on `main`.
+The experiment code is on `main`. `feat/whisper-lora-experiment` is the earlier branch that added the config and logging models; `main` contains that commit. Do not start a training run from uncommitted files.
 
 ## Experiment 1 datasets
 
 Five sources were candidates. Three are in the first training mix. Two are not. Vistaar is a benchmark list, not a sixth corpus to unpack on top of the others.
 
-Nothing below is on the disk yet. Download only after checking the license page, and only onto `/home/ubuntu/vaaku/data/raw`. Do not commit audio, and do not upload it to the Hugging Face model repo.
+FLEURS is the only corpus on the disk. Common Voice and Kathbath stay listed for a later run. Download only onto `/home/ubuntu/vaaku/data/raw`. Do not commit audio, and do not upload it to the Hugging Face model repo.
 
 ### In the first experiment
 
@@ -98,7 +96,7 @@ source /etc/profile.d/vaaku.sh
 bash scripts/verify_gpu.sh
 ```
 
-`make box-setup` and `make box-check` call those two scripts. There is no `make train` yet, because there is no training script.
+Clone the repo on the root disk, for example `/home/ubuntu/vaaku-whisper`. The virtualenv already on the box is `/home/ubuntu/vaakku-venv`. `make box-setup` and `make box-check` call the setup scripts. `make prepare-fleurs` and `make train` exist and have not been run. The training experiment starts only after the FLEURS manifests exist, and only as an explicit command.
 
 ## What this repo will not do
 
