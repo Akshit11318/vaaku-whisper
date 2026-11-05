@@ -1,4 +1,4 @@
-test_manifest: ${VAAKKU_DATA_DIR:-data/prepared}/test.jsonl
+test_manifest: ${VAAKKU_DATA_DIR:-data}/prepared/test.jsonl
 expect_split: test
 output_dir: ${VAAKKU_ARTIFACT_DIR:-artifacts}/eval
 model_path: null

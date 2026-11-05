@@ -1,5 +1,5 @@
 seed: 42
-output_dir: ${VAAKKU_DATA_DIR:-data/prepared}
+output_dir: ${VAAKKU_DATA_DIR:-data}/prepared
 sample_rate: 16000
 min_duration_s: 0.5
 max_duration_s: 30
